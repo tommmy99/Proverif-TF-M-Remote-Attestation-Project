@@ -1,0 +1,210 @@
+OUTPUT PROVERIF :
+
+Linear part:
+ecdh(a,ecpub_of(b)) = ecdh(b,ecpub_of(a))
+Completing equations...
+Completed equations:
+ecdh(a,ecpub_of(b)) = ecdh(b,ecpub_of(a))
+Convergent part:
+checksignH(signH(m,sk),sspk(sk)) = m
+fst(pair(a,b)) = a
+snd(pair(a,b)) = b
+checksignV(signV(mV,skv),signpk(skv)) = mV
+aead_dec(aead_enc(m,k,iv),k,iv) = m
+Completing equations...
+Completed equations:
+aead_dec(aead_enc(m,k,iv),k,iv) = m
+checksignV(signV(mV,skv),signpk(skv)) = mV
+snd(pair(a,b)) = b
+fst(pair(a,b)) = a
+checksignH(signH(m,sk),sspk(sk)) = m
+Process 0 (that is, the initial process):
+{1}new skH: ssskey;
+{2}new skeyV: signkeyV;
+{3}let vkeyV: verifkeyV = signpk(skeyV) in
+{4}let pkH: sspkey = sspk(skH) in
+(
+    {5}!
+    {6}let skeyV_1: signkeyV = skeyV in
+    {7}new skV: ecpriv;
+    {8}let pkV: ecpub = ecpub_of(skV) in
+    {9}new nonceV: bitstring;
+    {10}let S: bitstring = signV(hash(pair(ecpub_to_bs(pkV),nonceV)),skeyV_1) in
+    {11}out(c, (nonceV,pkV,S));
+    {12}in(c, measX: bitstring);
+    {13}in(c, (tok: bitstring,pkY: ecpub));
+    {14}let payload: bitstring = checksignH(tok,pkH) in
+    {15}let chall_tok: bitstring = fst(payload) in
+    {16}let meas_tok: bitstring = snd(payload) in
+    {17}if (meas_tok = measX) then
+    {18}let challV: bitstring = hash(pair(nonceV,pair(ecpub_to_bs(pkV),ecpub_to_bs(pkY)))) in
+    {19}event beginV(pkV,pkY,challV);
+    {20}if (chall_tok = challV) then
+    {21}let zV: key = ecdh(skV,pkY) in
+    {22}let ksessV: key = kdf(pair(zkey_to_bs(zV),pair(challV,infoK))) in
+    {23}let macV: bitstring = mac(pair(labV,challV),ksessV) in   
+    {24}out(c, macV);
+    {25}in(c, macY: bitstring);
+    {26}if (macY = mac(pair(labA,challV),ksessV)) then
+    {27}event endV(pkY,pkV,challV);
+    {28}new ivV: bitstring;
+    {29}out(c, (ivV,aead_enc(secretV,ksessV,ivV)));
+    {30}in(c, (ivY: bitstring,ctY: bitstring));
+    {31}let r: bitstring = aead_dec(ctY,ksessV,ivY) in
+    0
+) | (
+    {32}!
+    {33}let skH_1: ssskey = skH in
+    {34}new skA: ecpriv;
+    {35}let pkA: ecpub = ecpub_of(skA) in
+    {36}in(c, (nonceX: bitstring,pkX: ecpub,msg: bitstring));    
+    {37}let h: bitstring = checksignV(msg,vkeyV) in
+    {38}let h_expected: bitstring = hash(pair(ecpub_to_bs(pkX),nonceX)) in
+    {39}if (h = h_expected) then
+    {40}let challA: bitstring = hash(pair(nonceX,pair(ecpub_to_bs(pkX),ecpub_to_bs(pkA)))) in
+    {41}event beginA(pkA,pkX,challA);
+    {42}let tok_1: bitstring = signH(pair(challA,measB),skH_1) in
+    {43}let meas: bitstring = snd(checksignH(tok_1,pkH)) in      
+    {44}out(c, meas);
+    {45}out(c, (tok_1,pkA));
+    {46}let zP: key = ecdh(skA,pkX) in
+    {47}let ksessP: key = kdf(pair(zkey_to_bs(zP),pair(challA,infoK))) in
+    {48}in(c, macX: bitstring);
+    {49}if (macX = mac(pair(labV,challA),ksessP)) then
+    {50}event endA(pkX,pkA,challA);
+    {51}let macP: bitstring = mac(pair(labA,challA),ksessP) in   
+    {52}out(c, macP);
+    {53}in(c, (ivX: bitstring,ctX: bitstring));
+    {54}let s: bitstring = aead_dec(ctX,ksessP,ivX) in
+    {55}new ivP: bitstring;
+    {56}out(c, (ivP,aead_enc(secretA,ksessP,ivP)))
+)
+
+--  Process 1 (that is, process 0, with let moved downwards):    
+{1}new skH: ssskey;
+{2}new skeyV: signkeyV;
+{4}let pkH: sspkey = sspk(skH) in
+(
+    {5}!
+    {7}new skV: ecpriv;
+    {9}new nonceV: bitstring;
+    {8}let pkV: ecpub = ecpub_of(skV) in
+    {6}let skeyV_1: signkeyV = skeyV in
+    {10}let S: bitstring = signV(hash(pair(ecpub_to_bs(pkV),nonceV)),skeyV_1) in
+    {11}out(c, (nonceV,pkV,S));
+    {12}in(c, measX: bitstring);
+    {13}in(c, (tok: bitstring,pkY: ecpub));
+    {14}let payload: bitstring = checksignH(tok,pkH) in
+    {16}let meas_tok: bitstring = snd(payload) in
+    {17}if (meas_tok = measX) then
+    {18}let challV: bitstring = hash(pair(nonceV,pair(ecpub_to_bs(pkV),ecpub_to_bs(pkY)))) in
+    {19}event beginV(pkV,pkY,challV);
+    {15}let chall_tok: bitstring = fst(payload) in
+    {20}if (chall_tok = challV) then
+    {21}let zV: key = ecdh(skV,pkY) in
+    {22}let ksessV: key = kdf(pair(zkey_to_bs(zV),pair(challV,infoK))) in
+    {23}let macV: bitstring = mac(pair(labV,challV),ksessV) in   
+    {24}out(c, macV);
+    {25}in(c, macY: bitstring);
+    {26}if (macY = mac(pair(labA,challV),ksessV)) then
+    {27}event endV(pkY,pkV,challV);
+    {28}new ivV: bitstring;
+    {29}out(c, (ivV,aead_enc(secretV,ksessV,ivV)));
+    {30}in(c, (ivY: bitstring,ctY: bitstring))
+) | (
+    {32}!
+    {34}new skA: ecpriv;
+    {36}in(c, (nonceX: bitstring,pkX: ecpub,msg: bitstring));    
+    {38}let h_expected: bitstring = hash(pair(ecpub_to_bs(pkX),nonceX)) in
+    {3}let vkeyV: verifkeyV = signpk(skeyV) in
+    {37}let h: bitstring = checksignV(msg,vkeyV) in
+    {39}if (h = h_expected) then
+    {35}let pkA: ecpub = ecpub_of(skA) in
+    {40}let challA: bitstring = hash(pair(nonceX,pair(ecpub_to_bs(pkX),ecpub_to_bs(pkA)))) in
+    {41}event beginA(pkA,pkX,challA);
+    {33}let skH_1: ssskey = skH in
+    {42}let tok_1: bitstring = signH(pair(challA,measB),skH_1) in
+    {43}let meas: bitstring = snd(checksignH(tok_1,pkH)) in      
+    {44}out(c, meas);
+    {45}out(c, (tok_1,pkA));
+    {48}in(c, macX: bitstring);
+    {46}let zP: key = ecdh(skA,pkX) in
+    {47}let ksessP: key = kdf(pair(zkey_to_bs(zP),pair(challA,infoK))) in
+    {49}if (macX = mac(pair(labV,challA),ksessP)) then
+    {50}event endA(pkX,pkA,challA);
+    {51}let macP: bitstring = mac(pair(labA,challA),ksessP) in   
+    {52}out(c, macP);
+    {53}in(c, (ivX: bitstring,ctX: bitstring));
+    {55}new ivP: bitstring;
+    {56}out(c, (ivP,aead_enc(secretA,ksessP,ivP)))
+)
+
+-- Query not attacker(secretA[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 155 rules (42 with conclusion selected). Queue: 29 rules.
+400 rules inserted. Base: 259 rules (50 with conclusion selected). Queue: 46 rules.
+600 rules inserted. Base: 315 rules (54 with conclusion selected). Queue: 55 rules.
+800 rules inserted. Base: 339 rules (58 with conclusion selected). Queue: 2 rules. 
+Starting query not attacker(secretA[])                           
+RESULT not attacker(secretA[]) is true.                          
+-- Query not attacker(secretV[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 155 rules (42 with conclusion selected). Queue: 29 rules.
+400 rules inserted. Base: 259 rules (50 with conclusion selected). Queue: 46 rules.
+600 rules inserted. Base: 315 rules (54 with conclusion selected). Queue: 55 rules.
+800 rules inserted. Base: 339 rules (58 with conclusion selected). Queue: 2 rules. 
+Starting query not attacker(secretV[])                           
+RESULT not attacker(secretV[]) is true.                          
+-- Query inj-event(endV(a,v,ch)) ==> inj-event(beginA(a,v,ch)) in process 1.
+Translating the process into Horn clauses...
+Completing...                                                    
+200 rules inserted. Base: 164 rules (42 with conclusion selected). Queue: 42 rules.
+400 rules inserted. Base: 284 rules (45 with conclusion selected). Queue: 36 rules.
+600 rules inserted. Base: 407 rules (51 with conclusion selected). Queue: 95 rules.
+800 rules inserted. Base: 442 rules (63 with conclusion selected). Queue: 74 rules.
+1000 rules inserted. Base: 515 rules (63 with conclusion selected). Queue: 11 rules.
+Starting query inj-event(endV(a,v,ch)) ==> inj-event(beginA(a,v,ch))
+goal reachable: b-event(@p_act(@occ48_1,mac(pair(labV[],hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1)))))),kdf(pair(zkey_to_bs(ecdh(skA_1,ecpub_of(skV_1))),pair(hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1))))),infoK[])))))) && b-inj-event(beginA(ecpub_of(skA_1),ecpub_of(skV_1),hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1)))))),@occ41_1) -> inj-event(endV(ecpub_of(skA_1),ecpub_of(skV_1),hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1)))))),@occ27_1)
+The 1st, 2nd hypotheses occur strictly before the conclusion.    
+Abbreviations:
+skA_1 = skA[!1 = @sid]
+skV_1 = skV[!1 = @sid_1]
+nonceV_1 = nonceV[!1 = @sid_1]
+@occ27_1 = @occ27[macY = mac(pair(labA[],hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1)))))),kdf(pair(zkey_to_bs(ecdh(skA_1,ecpub_of(skV_1))),pair(hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1))))),infoK[])))),pkY = ecpub_of(skA_1),tok = signH(pair(hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1))))),measB[]),skH[]),measX = snd(pair(hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1))))),measB[])),!1 = @sid_1]
+@occ48_1 = @occ48[!1 = @sid]
+@occ41_1 = @occ41[msg = signV(hash(pair(ecpub_to_bs(ecpub_of(skV_1)),nonceV_1)),skeyV[]),pkX = ecpub_of(skV_1),nonceX = nonceV_1,!1 = @sid]
+RESULT inj-event(endV(a,v,ch)) ==> inj-event(beginA(a,v,ch)) is true.
+-- Query inj-event(endA(v,a,ch)) ==> inj-event(beginV(v,a,ch)) in process 1.
+Translating the process into Horn clauses...
+Completing...                                                    
+200 rules inserted. Base: 163 rules (42 with conclusion selected). Queue: 34 rules.
+400 rules inserted. Base: 291 rules (44 with conclusion selected). Queue: 43 rules.
+600 rules inserted. Base: 379 rules (52 with conclusion selected). Queue: 84 rules.
+800 rules inserted. Base: 409 rules (58 with conclusion selected). Queue: 63 rules.
+1000 rules inserted. Base: 456 rules (66 with conclusion selected). Queue: 30 rules.
+1200 rules inserted. Base: 473 rules (70 with conclusion selected). Queue: 2 rules. 
+Starting query inj-event(endA(v,a,ch)) ==> inj-event(beginV(v,a,ch))
+goal reachable: b-inj-event(beginV(ecpub_of(skV_1),ecpub_of(skA_1),hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1)))))),@occ19_1) -> inj-event(endA(ecpub_of(skV_1),ecpub_of(skA_1),hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1)))))),@occ50_1)
+The hypothesis occurs strictly before the conclusion.
+Abbreviations:
+skV_1 = skV[!1 = @sid]
+skA_1 = skA[!1 = @sid_1]
+nonceV_1 = nonceV[!1 = @sid]
+@occ50_1 = @occ50[macX = mac(pair(labV[],hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1)))))),kdf(pair(zkey_to_bs(ecdh(skA_1,ecpub_of(skV_1))),pair(hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1))))),infoK[])))),msg = signV(hash(pair(ecpub_to_bs(ecpub_of(skV_1)),nonceV_1)),skeyV[]),pkX = ecpub_of(skV_1),nonceX = nonceV_1,!1 = @sid_1]
+@occ19_1 = @occ19[pkY = ecpub_of(skA_1),tok = signH(pair(hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1))))),measB[]),skH[]),measX = snd(pair(hash(pair(nonceV_1,pair(ecpub_to_bs(ecpub_of(skV_1)),ecpub_to_bs(ecpub_of(skA_1))))),measB[])),!1 = @sid]
+RESULT inj-event(endA(v,a,ch)) ==> inj-event(beginV(v,a,ch)) is true.
+
+--------------------------------------------------------------   
+Verification summary:
+
+Query not attacker(secretA[]) is true.
+
+Query not attacker(secretV[]) is true.
+
+Query inj-event(endV(a,v,ch)) ==> inj-event(beginA(a,v,ch)) is true.
+
+Query inj-event(endA(v,a,ch)) ==> inj-event(beginV(v,a,ch)) is true.
+
+--------------------------------------------------------------  
